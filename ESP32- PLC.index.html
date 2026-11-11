@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mi Panel de Control ESP</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
+  <style>
+    body { font-family: system-ui, sans-serif; background: #0f172a; color: #f8fafc; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+    .card { background: #1e293b; padding: 2rem; border-radius: 1rem; box-shadow: 0 10px 25px rgba(0,0,0,0.5); text-align: center; max-width: 350px; width: 90%; }
+    h1 { font-size: 1.5rem; margin-bottom: 0.5rem; }
+    .status { font-size: 0.9rem; margin-bottom: 2rem; color: #94a3b8; }
+    .status.online { color: #22c55e; }
+    .btn { width: 100%; padding: 1rem; margin: 0.5rem 0; font-size: 1.1rem; font-weight: bold; border: none; border-radius: 0.5rem; cursor: pointer; transition: transform 0.1s, opacity 0.2s; }
+    .btn:active { transform: scale(0.98); }
+    .btn-on { background: #22c55e; color: #052e16; }
+    .btn-off { background: #ef4444; color: #450a0a; }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <h1>Control Remoto</h1>
+    <div id="status" class="status">Conectando al servidor...</div>
+    <button class="btn btn-on" onclick="enviar('ON')">ENCENDER</button>
+    <button class="btn btn-off" onclick="enviar('OFF')">APAGAR</button>
+  </div>
+
+  <script>
+    // CAMBIA ESTE TÓPICO POR UNO ÚNICO PARA TI
+    const topicControl = "mi_casa_123987/habitacion/luz"; 
+    
+    const brokerHost = "broker.hivemq.com";
+    const brokerPort = 8884;
+    const clientID = "WebClient_" + Math.random().toString(16).substr(2, 8);
+
+    const client = new Paho.MQTT.Client(brokerHost, brokerPort, clientID);
+
+    client.onConnectionLost = function () {
+      const el = document.getElementById("status");
+      el.innerText = "Desconectado";
+      el.className = "status";
+    };
+
+    client.connect({
+      useSSL: true,
+      onSuccess: function () {
+        const el = document.getElementById("status");
+        el.innerText = "● Conectado (Listo)";
+        el.className = "status online";
+      },
+      onFailure: function () {
+        document.getElementById("status").innerText = "Error de conexión";
+      }
+    });
+
+    function enviar(comando) {
+      if (client.isConnected()) {
+        const message = new Paho.MQTT.Message(comando);
+        message.destinationName = topicControl;
+        client.send(message);
+      } else {
+        alert("Aún no hay conexión con el servidor MQTT.");
+      }
+    }
+  </script>
+</body>
+</html>
